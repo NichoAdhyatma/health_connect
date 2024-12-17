@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:health/health.dart';
 
 /// List of data types available on iOS
@@ -100,3 +102,11 @@ const List<HealthDataType> dataTypesAndroid = [
   HealthDataType.TOTAL_CALORIES_BURNED,
   HealthDataType.MENSTRUATION_FLOW,
 ];
+
+abstract class SourceApp {
+  final samsungHealth = "com.sec.android.app.shealth";
+  final googleFit = "com.google.android.apps.fitness";
+  final myApp = "com.health.connect.health_connect";
+}
+
+

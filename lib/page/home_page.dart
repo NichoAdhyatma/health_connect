@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -6,8 +7,6 @@ import 'package:health/health.dart';
 import 'package:health_connect/core/utils.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:carp_serializable/carp_serializable.dart';
-
-void main() => runApp(const HealthApp());
 
 class HealthApp extends StatefulWidget {
   const HealthApp({super.key});
@@ -67,17 +66,20 @@ class HealthAppState extends State<HealthApp> {
   //     types.map((e) => HealthDataAccess.READ).toList();
 
   // Or both READ and WRITE
+  static const _iOSReadOnlyTypes = [
+    HealthDataType.WALKING_HEART_RATE,
+    HealthDataType.ELECTROCARDIOGRAM,
+    HealthDataType.HIGH_HEART_RATE_EVENT,
+    HealthDataType.LOW_HEART_RATE_EVENT,
+    HealthDataType.IRREGULAR_HEART_RATE_EVENT,
+    HealthDataType.EXERCISE_TIME,
+    HealthDataType.ATRIAL_FIBRILLATION_BURDEN,
+  ];
+
   List<HealthDataAccess> get permissions => types
       .map((type) =>
           // can only request READ permissions to the following list of types on iOS
-          [
-            HealthDataType.WALKING_HEART_RATE,
-            HealthDataType.ELECTROCARDIOGRAM,
-            HealthDataType.HIGH_HEART_RATE_EVENT,
-            HealthDataType.LOW_HEART_RATE_EVENT,
-            HealthDataType.IRREGULAR_HEART_RATE_EVENT,
-            HealthDataType.EXERCISE_TIME,
-          ].contains(type)
+          _iOSReadOnlyTypes.contains(type)
               ? HealthDataAccess.READ
               : HealthDataAccess.READ_WRITE)
       .toList();
@@ -111,10 +113,9 @@ class HealthAppState extends State<HealthApp> {
 
     // hasPermissions = false because the hasPermission cannot disclose if WRITE access exists.
     // Hence, we have to request with WRITE as well.
-    hasPermissions = false;
 
     bool authorized = false;
-    if (!hasPermissions) {
+    if (hasPermissions == null || !hasPermissions) {
       // requesting access to the data types before reading them
       try {
         authorized = await Health()
@@ -191,7 +192,7 @@ class HealthAppState extends State<HealthApp> {
   /// Note that you should ensure that you have permissions to add the
   /// following data types.
   Future<void> addData() async {
-    final now = DateTime.now();
+    final now = DateTime(2024, 12, 5, 13, 57);
     final earlier = now.subtract(const Duration(minutes: 20));
 
     // Add data for supported types
@@ -203,11 +204,12 @@ class HealthAppState extends State<HealthApp> {
     // misc. health data examples using the writeHealthData() method
     success &= await Health().writeWorkoutData(
       recordingMethod: RecordingMethod.automatic,
-      activityType: HealthWorkoutActivityType.WALKING,
+      activityType: HealthWorkoutActivityType.RUNNING,
       start: now,
       end: now.add(
-        const Duration(minutes: 30),
+        const Duration(minutes: 64),
       ),
+      title: "lari dipadang",
       totalDistance: 5000,
       totalDistanceUnit: HealthDataUnit.METER,
       totalEnergyBurned: 200,
