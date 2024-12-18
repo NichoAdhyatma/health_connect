@@ -1,6 +1,5 @@
 import 'dart:developer';
 
-import 'package:carp_serializable/carp_serializable.dart';
 import 'package:get/get.dart';
 import 'package:health/health.dart';
 import 'package:health_connect/core/health_access_mixin_data.dart';
@@ -14,6 +13,19 @@ class HealthConnectController extends GetxController
 
   RxList<RecordingMethod> recordingMethodsToFilter =
       RxList(<RecordingMethod>[]);
+
+  RxInt totalSteps = RxInt(0);
+
+  @override
+  void onInit() {
+    Health().configure();
+
+    Health().getHealthConnectSdkStatus();
+
+    authorizeHealthConnect();
+
+    super.onInit();
+  }
 
   Future<void> authorizeHealthConnect() async {
     await Permission.activityRecognition.request();
@@ -51,11 +63,17 @@ class HealthConnectController extends GetxController
   }
 
   Future<void> fetchHealthData({required DateTime date}) async {
-    // get data within the last 24 hours
-    final now = date;
-    final yesterday = now.subtract(const Duration(hours: 24));
+    final start = date;
+    final end = start.add(
+      const Duration(
+        hours: 23,
+        minutes: 59,
+        seconds: 59,
+      ),
+    );
 
-    // Clear old data points
+    log('Start: $start, End: $end');
+
     healthDataList.clear();
 
     try {
@@ -64,18 +82,16 @@ class HealthConnectController extends GetxController
         types: [
           HealthDataType.STEPS,
         ],
-        startTime: yesterday,
-        endTime: now,
+        startTime: start,
+        endTime: end,
         recordingMethodsToFilter: recordingMethodsToFilter,
       );
 
       log('Total number of data points: ${healthData.length}. '
           '${healthData.length > 100 ? 'Only showing the first 100.' : ''}');
 
-      // sort the data points by date
       healthData.sort((a, b) => b.dateTo.compareTo(a.dateTo));
 
-      // save all the new data points (only the first 100)
       healthDataList.addAll(
           (healthData.length < 100) ? healthData : healthData.sublist(0, 100));
     } catch (error) {
@@ -84,19 +100,41 @@ class HealthConnectController extends GetxController
 
     healthDataList.value = Health().removeDuplicates(healthDataList);
 
-    for (var data in healthDataList) {
-      log(toJsonString(data));
-    }
+    List<int> dataSteps = healthDataList
+        .map((e) => e.value.toJson()['numericValue'] as int)
+        .toList();
+
+    log('total data steps: $dataSteps');
+
+    totalSteps.value =
+        dataSteps.fold(0, (previousValue, element) => previousValue + element);
   }
 
-  @override
-  void onInit() {
-    Health().configure();
+  Future<void> fetchStepData({required DateTime date}) async {
+    final start = date;
+    final end = start.add(
+      const Duration(
+        hours: 24,
+        minutes: 59,
+        seconds: 59,
+      ),
+    );
 
-    Health().getHealthConnectSdkStatus();
+    bool stepsPermission =
+        await Health().hasPermissions([HealthDataType.STEPS]) ?? false;
+    if (!stepsPermission) {
+      stepsPermission =
+          await Health().requestAuthorization([HealthDataType.STEPS]);
+    }
 
-    authorizeHealthConnect();
+    if (stepsPermission) {
+      try {
+        int? steps = await Health().getTotalStepsInInterval(start, end);
 
-    super.onInit();
+        log('Total number of steps: $steps');
+      } catch (error) {
+        log("Exception in getTotalStepsInInterval: $error");
+      }
+    }
   }
 }

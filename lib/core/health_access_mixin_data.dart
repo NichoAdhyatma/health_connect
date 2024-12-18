@@ -64,8 +64,6 @@ mixin HealthAccessDataMixin {
     HealthDataType.MENSTRUATION_FLOW,
   ];
 
-
-
   /// List of data types available on Android.
   ///
   /// Note that these are only the ones supported on Android's Health Connect API.

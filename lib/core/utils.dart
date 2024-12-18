@@ -109,4 +109,8 @@ abstract class SourceApp {
   final myApp = "com.health.connect.health_connect";
 }
 
+extension DateOnly on DateTime {
+  DateTime get date => DateTime(year, month, day);
+}
+
 
